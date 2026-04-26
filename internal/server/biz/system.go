@@ -98,7 +98,7 @@ const (
 	SystemKeyCustomUserAgent = "system_custom_user_agent"
 )
 
-const DefaultUserAgent = "Cline/3.81.0"
+const DefaultUserAgent = "claude-cli/2.1.119"
 
 // SystemGeneralSettings represents general system configuration settings.
 type SystemGeneralSettings struct {

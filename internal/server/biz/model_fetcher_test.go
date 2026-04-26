@@ -180,7 +180,7 @@ func TestExtractJSONArrayWithGeminiModels(t *testing.T) {
 }
 
 func TestPrepareModelsEndpoint(t *testing.T) {
-	fetcher := NewModelFetcher(nil, nil)
+	fetcher := NewModelFetcher(nil, nil, nil)
 
 	tests := []struct {
 		name        string
@@ -396,7 +396,7 @@ func TestPrepareModelsEndpoint(t *testing.T) {
 }
 
 func TestPrepareModelsEndpointHeaders(t *testing.T) {
-	fetcher := NewModelFetcher(nil, nil)
+	fetcher := NewModelFetcher(nil, nil, nil)
 
 	t.Run("Anthropic sets correct version header", func(t *testing.T) {
 		_, headers := fetcher.prepareModelsEndpoint(channel.TypeAnthropic, "https://api.anthropic.com")
@@ -463,7 +463,7 @@ func TestFetchModelsGeminiPagination(t *testing.T) {
 	}))
 	defer server.Close()
 
-	fetcher := NewModelFetcher(httpclient.NewHttpClientWithClient(server.Client()), nil)
+	fetcher := NewModelFetcher(httpclient.NewHttpClientWithClient(server.Client()), nil, nil)
 	apiKey := "test-key"
 
 	result, err := fetcher.FetchModels(context.Background(), FetchModelsInput{
@@ -569,7 +569,7 @@ func TestFetchModelsGeminiVertex(t *testing.T) {
 	}`, &callCount)
 	defer server.Close()
 
-	fetcher := NewModelFetcher(httpclient.NewHttpClientWithClient(server.Client()), nil)
+	fetcher := NewModelFetcher(httpclient.NewHttpClientWithClient(server.Client()), nil, nil)
 
 	// Override the gemini vertex fetcher URL to use test server
 	fetcher.geminiVertexFetcher.providerURL = server.URL
@@ -617,7 +617,7 @@ func TestFetchCopilotModels(t *testing.T) {
 	}`, &callCount)
 	defer server.Close()
 
-	fetcher := NewModelFetcher(httpclient.NewHttpClientWithClient(server.Client()), nil)
+	fetcher := NewModelFetcher(httpclient.NewHttpClientWithClient(server.Client()), nil, nil)
 
 	// Override the copilot fetcher URL to use test server
 	fetcher.copilotFetcher.providerURL = server.URL

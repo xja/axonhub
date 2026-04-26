@@ -1,5 +1,7 @@
 package httpclient
 
+const defaultUserAgent = "Cline/3.81.0"
+
 import (
 	"bytes"
 	"context"
@@ -344,7 +346,7 @@ func BuildHttpRequest(
 	// Handle User-Agent header - only set default if not already present
 	if httpReq.Header.Get("User-Agent") == "" {
 		// No User-Agent set, use default
-		httpReq.Header.Set("User-Agent", "axonhub/1.0")
+		httpReq.Header.Set("User-Agent", defaultUserAgent)
 	}
 
 	for k := range libManagedHeaders {

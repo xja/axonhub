@@ -58,7 +58,7 @@ func (svc *ChannelService) syncChannelModels(ctx context.Context) {
 
 // syncChannelModelsForChannel syncs supported models for a single channel.
 func (svc *ChannelService) syncChannelModelsForChannel(ctx context.Context, ch *ent.Channel, patternOverride *string) (*ent.Channel, error) {
-	modelFetcher := NewModelFetcher(svc.httpClient, svc)
+	modelFetcher := NewModelFetcher(svc.httpClient, svc, svc.SystemService)
 
 	result, err := modelFetcher.FetchModels(ctx, FetchModelsInput{
 		ChannelType: ch.Type.String(),

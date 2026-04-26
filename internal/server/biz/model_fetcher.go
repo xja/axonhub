@@ -30,8 +30,21 @@ const providerConfCacheDuration = 1 * time.Hour
 type ModelFetcher struct {
 	httpClient          *httpclient.HttpClient
 	channelService      *ChannelService
+	systemService       *SystemService
 	copilotFetcher      *providerConfFetcher
 	geminiVertexFetcher *providerConfFetcher
+}
+
+// resolveUserAgent returns the configured custom user-agent, falling back to DefaultUserAgent.
+func (f *ModelFetcher) resolveUserAgent(ctx context.Context) string {
+	if f.systemService == nil {
+		return DefaultUserAgent
+	}
+	ua, err := f.systemService.CustomUserAgent(ctx)
+	if err != nil {
+		return DefaultUserAgent
+	}
+	return ua
 }
 
 // providerConfFetcher handles fetching models from PublicProviderConf with caching.
@@ -44,7 +57,7 @@ type providerConfFetcher struct {
 }
 
 // fetch fetches models with caching using double-check locking.
-func (f *providerConfFetcher) fetch(ctx context.Context, httpClient *httpclient.HttpClient) []ModelIdentify {
+func (f *providerConfFetcher) fetch(ctx context.Context, httpClient *httpclient.HttpClient, userAgent string) []ModelIdentify {
 	f.cacheMu.RLock()
 	if len(f.modelsCache) > 0 && time.Since(f.cacheTimestamp) < f.cacheDuration {
 		models := make([]ModelIdentify, len(f.modelsCache))
@@ -64,7 +77,7 @@ func (f *providerConfFetcher) fetch(ctx context.Context, httpClient *httpclient.
 		return models
 	}
 
-	models, err := f.fetchFromSource(ctx, httpClient)
+	models, err := f.fetchFromSource(ctx, httpClient, userAgent)
 	if err != nil {
 		slog.Error("failed to fetch models from source", "providerURL", f.providerURL, "error", err)
 		// If fetch failed but cache exists, return defensive copy
@@ -91,12 +104,13 @@ func (f *providerConfFetcher) fetch(ctx context.Context, httpClient *httpclient.
 }
 
 // fetchFromSource fetches models from PublicProviderConf.
-func (f *providerConfFetcher) fetchFromSource(ctx context.Context, httpClient *httpclient.HttpClient) ([]ModelIdentify, error) {
+func (f *providerConfFetcher) fetchFromSource(ctx context.Context, httpClient *httpclient.HttpClient, userAgent string) ([]ModelIdentify, error) {
 	req := &httpclient.Request{
 		Method: http.MethodGet,
 		URL:    f.providerURL,
 		Headers: http.Header{
-			"Accept": []string{"application/json"},
+			"Accept":     []string{"application/json"},
+			"User-Agent": []string{userAgent},
 		},
 	}
 
@@ -137,10 +151,11 @@ func (f *providerConfFetcher) fetchFromSource(ctx context.Context, httpClient *h
 }
 
 // NewModelFetcher creates a new ModelFetcher instance.
-func NewModelFetcher(httpClient *httpclient.HttpClient, channelService *ChannelService) *ModelFetcher {
+func NewModelFetcher(httpClient *httpclient.HttpClient, channelService *ChannelService, systemService *SystemService) *ModelFetcher {
 	return &ModelFetcher{
 		httpClient:     httpClient,
 		channelService: channelService,
+		systemService:  systemService,
 		copilotFetcher: &providerConfFetcher{
 			cacheDuration: providerConfCacheDuration,
 			providerURL:   copilot.ProviderConfURL,
@@ -194,12 +209,12 @@ func isOfficialOnlyType(typ channel.Type) bool {
 
 // fetchCopilotModels fetches GitHub Copilot models from PublicProviderConf with caching.
 func (f *ModelFetcher) fetchCopilotModels(ctx context.Context) []ModelIdentify {
-	return f.copilotFetcher.fetch(ctx, f.httpClient)
+	return f.copilotFetcher.fetch(ctx, f.httpClient, f.resolveUserAgent(ctx))
 }
 
 // fetchGeminiVertexModels fetches Gemini Vertex models from PublicProviderConf with caching.
 func (f *ModelFetcher) fetchGeminiVertexModels(ctx context.Context) []ModelIdentify {
-	return f.geminiVertexFetcher.fetch(ctx, f.httpClient)
+	return f.geminiVertexFetcher.fetch(ctx, f.httpClient, f.resolveUserAgent(ctx))
 }
 
 func (f *ModelFetcher) tryReturnDefaultModels(ctx context.Context, channelType string) (*FetchModelsResult, bool) {
@@ -311,6 +326,8 @@ func (f *ModelFetcher) FetchModels(ctx context.Context, input FetchModelsInput) 
 		URL:     modelsURL,
 		Headers: authHeaders,
 	}
+
+	req.Headers.Set("User-Agent", f.resolveUserAgent(ctx))
 
 	if channelType.UsesAnthropicModelAPI() {
 		req.Headers.Set("X-Api-Key", apiKey)

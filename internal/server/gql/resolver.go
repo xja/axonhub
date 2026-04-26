@@ -75,7 +75,7 @@ func NewSchema(
 	httpClient *httpclient.HttpClient,
 	gcWorker *gc.Worker,
 ) graphql.ExecutableSchema {
-	modelFetcher := biz.NewModelFetcher(httpClient, channelService)
+	modelFetcher := biz.NewModelFetcher(httpClient, channelService, systemService)
 
 	return NewExecutableSchema(Config{
 		Resolvers: &Resolver{
