@@ -146,8 +146,13 @@ func applyUserAgentPassThrough(outbound *PersistentOutboundTransformer, systemSe
 				}
 			}
 		} else {
-			// Pass-through disabled: use AxonHub's default User-Agent
-			request.Headers.Set("User-Agent", "axonhub/1.0")
+			customUserAgent, err := systemService.CustomUserAgent(ctx)
+			if err != nil {
+				log.Warn(ctx, "failed to get custom user-agent setting", log.Cause(err))
+				customUserAgent = biz.DefaultUserAgent
+			}
+
+			request.Headers.Set("User-Agent", customUserAgent)
 		}
 
 		return request, nil

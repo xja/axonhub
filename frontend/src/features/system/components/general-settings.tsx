@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { AutoCompleteSelect } from '@/components/auto-complete-select';
 import { useSystemContext } from '../context/system-context';
@@ -28,6 +29,7 @@ export function GeneralSettings() {
   const { data: uaSettings, isLoading: isLoadingUASettings } = useUserAgentPassThroughSettings();
   const updateUASettings = useUpdateUserAgentPassThroughSettings();
   const [uaPassThroughEnabled, setUaPassThroughEnabled] = useState(false);
+  const [customUserAgent, setCustomUserAgent] = useState('');
 
   const [currencyCode, setCurrencyCode] = useState('USD');
   const [timezone, setTimezone] = useState('UTC');
@@ -55,6 +57,7 @@ export function GeneralSettings() {
   useEffect(() => {
     if (uaSettings) {
       setUaPassThroughEnabled(uaSettings.enabled);
+      setCustomUserAgent(uaSettings.customUserAgent);
     }
   }, [uaSettings]);
 
@@ -74,10 +77,29 @@ export function GeneralSettings() {
     const previousValue = uaPassThroughEnabled;
     setUaPassThroughEnabled(enabled);
     try {
-      await updateUASettings.mutateAsync({ enabled });
+      await updateUASettings.mutateAsync({ enabled, customUserAgent: customUserAgent.trim() });
     } catch {
-      // Revert state on error
       setUaPassThroughEnabled(previousValue);
+    }
+  };
+
+  const handleCustomUserAgentBlur = async () => {
+    const nextValue = customUserAgent.trim();
+    const previousValue = uaSettings?.customUserAgent ?? '';
+
+    if (nextValue === previousValue) {
+      return;
+    }
+
+    setCustomUserAgent(nextValue);
+
+    try {
+      await updateUASettings.mutateAsync({
+        enabled: uaPassThroughEnabled,
+        customUserAgent: nextValue,
+      });
+    } catch {
+      setCustomUserAgent(previousValue);
     }
   };
 
@@ -149,6 +171,21 @@ export function GeneralSettings() {
               onCheckedChange={handleUAPassThroughChange}
               disabled={isLoadingUASettings || updateUASettings.isPending}
             />
+          </div>
+
+          <div className='space-y-2'>
+            <Label htmlFor='custom-user-agent'>{t('system.userAgentPassThrough.customUserAgent.label')}</Label>
+            <div className='max-w-md'>
+              <Input
+                id='custom-user-agent'
+                value={customUserAgent}
+                onChange={(e) => setCustomUserAgent(e.target.value)}
+                onBlur={handleCustomUserAgentBlur}
+                placeholder={t('system.userAgentPassThrough.customUserAgent.placeholder')}
+                disabled={isLoadingUASettings || updateUASettings.isPending || uaPassThroughEnabled}
+              />
+            </div>
+            <div className='text-muted-foreground text-sm'>{t('system.userAgentPassThrough.customUserAgent.helpText')}</div>
           </div>
         </CardContent>
       </Card>

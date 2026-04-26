@@ -1037,3 +1037,99 @@ func TestSystemService_UserAgentPassThrough_WithCache(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, uaPassThrough3)
 }
+
+func TestSystemService_CustomUserAgent(t *testing.T) {
+	tests := []struct {
+		name      string
+		cache     xcache.Config
+		setupFunc func(ctx context.Context, s *SystemService) error
+		want      string
+	}{
+		{
+			name:  "default_returns_default_user_agent",
+			cache: xcache.Config{Mode: xcache.ModeMemory},
+			want:  DefaultUserAgent,
+		},
+		{
+			name:  "set_custom_value_returns_custom_value",
+			cache: xcache.Config{Mode: xcache.ModeMemory},
+			setupFunc: func(ctx context.Context, s *SystemService) error {
+				return s.SetCustomUserAgent(ctx, "MyAgent/1.2.3")
+			},
+			want: "MyAgent/1.2.3",
+		},
+		{
+			name:  "empty_value_falls_back_to_default",
+			cache: xcache.Config{Mode: xcache.ModeMemory},
+			setupFunc: func(ctx context.Context, s *SystemService) error {
+				return s.SetCustomUserAgent(ctx, "   ")
+			},
+			want: DefaultUserAgent,
+		},
+		{
+			name:  "trimmed_value_is_persisted",
+			cache: xcache.Config{Mode: xcache.ModeMemory},
+			setupFunc: func(ctx context.Context, s *SystemService) error {
+				return s.SetCustomUserAgent(ctx, "  Custom/2.0  ")
+			},
+			want: "Custom/2.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service, client := setupTestSystemService(t, tt.cache)
+			defer client.Close()
+
+			ctx := context.Background()
+			ctx = ent.NewContext(ctx, client)
+			ctx = authz.WithTestBypass(ctx)
+
+			if tt.setupFunc != nil {
+				err := tt.setupFunc(ctx, service)
+				require.NoError(t, err)
+			}
+
+			got, err := service.CustomUserAgent(ctx)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestSystemService_CustomUserAgent_WithCache(t *testing.T) {
+	mr := miniredis.RunT(t)
+	defer mr.Close()
+
+	cacheConfig := xcache.Config{
+		Mode: xcache.ModeRedis,
+		Redis: xredis.Config{
+			Addr: mr.Addr(),
+		},
+	}
+
+	service, client := setupTestSystemService(t, cacheConfig)
+	defer client.Close()
+
+	ctx := context.Background()
+	ctx = ent.NewContext(ctx, client)
+	ctx = authz.WithTestBypass(ctx)
+
+	err := service.SetCustomUserAgent(ctx, "Agent/1.0")
+	require.NoError(t, err)
+
+	ua1, err := service.CustomUserAgent(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "Agent/1.0", ua1)
+
+	ua2, err := service.CustomUserAgent(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "Agent/1.0", ua2)
+
+	err = service.SetCustomUserAgent(ctx, "Agent/2.0")
+	require.NoError(t, err)
+
+	ua3, err := service.CustomUserAgent(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "Agent/2.0", ua3)
+}

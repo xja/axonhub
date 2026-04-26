@@ -962,6 +962,7 @@ func TestApplyUserAgentPassThrough(t *testing.T) {
 		name             string
 		channelUASetting *bool // Channel-level override
 		globalUAEnabled  bool  // System-level setting
+		customUserAgent  string
 		clientUA         string
 		wantUAHeader     string
 	}{
@@ -969,13 +970,15 @@ func TestApplyUserAgentPassThrough(t *testing.T) {
 			name:             "channel_disabled_ignores_global",
 			channelUASetting: new(false),
 			globalUAEnabled:  true,
+			customUserAgent:  biz.DefaultUserAgent,
 			clientUA:         "Client/1.0",
-			wantUAHeader:     "axonhub/1.0", // Pass-through disabled: middleware sets default UA
+			wantUAHeader:     biz.DefaultUserAgent,
 		},
 		{
 			name:             "channel_enabled_ignores_global",
 			channelUASetting: new(true),
 			globalUAEnabled:  false,
+			customUserAgent:  biz.DefaultUserAgent,
 			clientUA:         "Client/1.0",
 			wantUAHeader:     "Client/1.0",
 		},
@@ -983,13 +986,15 @@ func TestApplyUserAgentPassThrough(t *testing.T) {
 			name:             "channel_nil_inherits_global_disabled",
 			channelUASetting: nil,
 			globalUAEnabled:  false,
+			customUserAgent:  biz.DefaultUserAgent,
 			clientUA:         "Client/1.0",
-			wantUAHeader:     "axonhub/1.0", // Pass-through disabled: middleware sets default UA
+			wantUAHeader:     biz.DefaultUserAgent,
 		},
 		{
 			name:             "channel_nil_inherits_global_enabled",
 			channelUASetting: nil,
 			globalUAEnabled:  true,
+			customUserAgent:  biz.DefaultUserAgent,
 			clientUA:         "Client/1.0",
 			wantUAHeader:     "Client/1.0",
 		},
@@ -997,8 +1002,17 @@ func TestApplyUserAgentPassThrough(t *testing.T) {
 			name:             "enabled_but_no_client_ua",
 			channelUASetting: new(true),
 			globalUAEnabled:  true,
+			customUserAgent:  biz.DefaultUserAgent,
 			clientUA:         "",
 			wantUAHeader:     "",
+		},
+		{
+			name:             "custom_user_agent_when_pass_through_disabled",
+			channelUASetting: nil,
+			globalUAEnabled:  false,
+			customUserAgent:  "MyAgent/9.9.9",
+			clientUA:         "Client/1.0",
+			wantUAHeader:     "MyAgent/9.9.9",
 		},
 	}
 
@@ -1011,6 +1025,9 @@ func TestApplyUserAgentPassThrough(t *testing.T) {
 
 			// Set global User-Agent pass-through setting
 			err := systemService.SetUserAgentPassThrough(ctx, tt.globalUAEnabled)
+			require.NoError(t, err)
+
+			err = systemService.SetCustomUserAgent(ctx, tt.customUserAgent)
 			require.NoError(t, err)
 
 			// Create mock channel with optional pass-through setting

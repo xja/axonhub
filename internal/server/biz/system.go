@@ -93,7 +93,12 @@ const (
 	// SystemKeyUserAgentPassThrough is the key used to store the user agent pass-through setting.
 	// When set to true, the system will pass through the original User-Agent header to upstream AI providers.
 	SystemKeyUserAgentPassThrough = "system_user_agent_pass_through"
+
+	// SystemKeyCustomUserAgent is the key used to store the custom outbound User-Agent value.
+	SystemKeyCustomUserAgent = "system_custom_user_agent"
 )
+
+const DefaultUserAgent = "Cline/3.81.0"
 
 // SystemGeneralSettings represents general system configuration settings.
 type SystemGeneralSettings struct {
@@ -1241,6 +1246,33 @@ func (s *SystemService) SetUserAgentPassThrough(ctx context.Context, enabled boo
 	}
 
 	return s.setSystemValue(ctx, SystemKeyUserAgentPassThrough, strValue)
+}
+
+func (s *SystemService) CustomUserAgent(ctx context.Context) (string, error) {
+	value, err := s.getSystemValue(ctx, SystemKeyCustomUserAgent)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return DefaultUserAgent, nil
+		}
+
+		return "", fmt.Errorf("failed to get custom user-agent: %w", err)
+	}
+
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return DefaultUserAgent, nil
+	}
+
+	return value, nil
+}
+
+func (s *SystemService) SetCustomUserAgent(ctx context.Context, value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		value = DefaultUserAgent
+	}
+
+	return s.setSystemValue(ctx, SystemKeyCustomUserAgent, value)
 }
 
 // UpdateAutoBackupLastRun updates the last backup timestamp and error status.

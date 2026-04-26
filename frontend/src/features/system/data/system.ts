@@ -1322,6 +1322,7 @@ const USER_AGENT_PASS_THROUGH_SETTINGS_QUERY = `
   query UserAgentPassThroughSettings {
     userAgentPassThroughSettings {
       enabled
+      customUserAgent
     }
   }
 `;
@@ -1334,10 +1335,12 @@ const UPDATE_USER_AGENT_PASS_THROUGH_SETTINGS_MUTATION = `
 
 export interface UserAgentPassThroughSettings {
   enabled: boolean;
+  customUserAgent: string;
 }
 
 export interface UpdateUserAgentPassThroughSettingsInput {
   enabled: boolean;
+  customUserAgent?: string;
 }
 
 export function useUserAgentPassThroughSettings() {

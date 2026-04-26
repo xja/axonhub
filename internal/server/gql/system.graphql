@@ -257,10 +257,12 @@ input UpdateVideoStorageSettingsInput {
 }
 type UserAgentPassThroughSettings {
   enabled: Boolean!
+  customUserAgent: String!
 }
 
 input UpdateUserAgentPassThroughSettingsInput {
   enabled: Boolean!
+  customUserAgent: String
 }
 
 

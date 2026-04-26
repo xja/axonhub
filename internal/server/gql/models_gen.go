@@ -489,11 +489,13 @@ type UpdateProjectUserInput struct {
 }
 
 type UpdateUserAgentPassThroughSettingsInput struct {
-	Enabled bool `json:"enabled"`
+	Enabled         bool    `json:"enabled"`
+	CustomUserAgent *string `json:"customUserAgent,omitempty"`
 }
 
 type UserAgentPassThroughSettings struct {
-	Enabled bool `json:"enabled"`
+	Enabled         bool   `json:"enabled"`
+	CustomUserAgent string `json:"customUserAgent"`
 }
 
 type VersionCheck struct {

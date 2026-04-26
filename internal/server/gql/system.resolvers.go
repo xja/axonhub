@@ -216,6 +216,13 @@ func (r *mutationResolver) UpdateUserAgentPassThroughSettings(ctx context.Contex
 		return false, fmt.Errorf("failed to update user-agent pass-through settings: %w", err)
 	}
 
+	if input.CustomUserAgent != nil {
+		err = r.systemService.SetCustomUserAgent(ctx, *input.CustomUserAgent)
+		if err != nil {
+			return false, fmt.Errorf("failed to update custom user-agent: %w", err)
+		}
+	}
+
 	return true, nil
 }
 
@@ -408,8 +415,14 @@ func (r *queryResolver) UserAgentPassThroughSettings(ctx context.Context) (*User
 		return nil, fmt.Errorf("failed to get user-agent pass-through settings: %w", err)
 	}
 
+	customUserAgent, err := r.systemService.CustomUserAgent(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get custom user-agent: %w", err)
+	}
+
 	return &UserAgentPassThroughSettings{
-		Enabled: enabled,
+		Enabled:         enabled,
+		CustomUserAgent: customUserAgent,
 	}, nil
 }
 

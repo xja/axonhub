@@ -328,5 +328,8 @@
   "system.userAgentPassThrough.title": "User-Agent Pass-Through",
   "system.userAgentPassThrough.description": "Control whether to pass through the original User-Agent header from client requests to upstream AI providers.",
   "system.userAgentPassThrough.label": "Enable User-Agent Pass-Through",
-  "system.userAgentPassThrough.helpText": "When enabled, the original User-Agent header from client requests will be sent to upstream AI providers. When disabled, AxonHub will use its own User-Agent."
+  "system.userAgentPassThrough.helpText": "When enabled, the original User-Agent header from client requests will be sent to upstream AI providers. When disabled, AxonHub will use its own User-Agent.",
+  "system.userAgentPassThrough.customUserAgent.label": "Custom User-Agent",
+  "system.userAgentPassThrough.customUserAgent.placeholder": "Cline/3.81.0",
+  "system.userAgentPassThrough.customUserAgent.helpText": "Used when User-Agent pass-through is disabled. Leave empty to use the default User-Agent."
 }
